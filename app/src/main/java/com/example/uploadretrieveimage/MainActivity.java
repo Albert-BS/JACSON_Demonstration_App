@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.GridView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
+    Button logout;
     FloatingActionButton fab;
     private GridView gridView;
     private ArrayList<DataClass> dataList;
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         dataList = new ArrayList<>();
         adapter = new MyAdapter(this, dataList);
         gridView.setAdapter(adapter);
+        logout = findViewById(R.id.logout_button);
 
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -55,6 +58,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, UploadActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        logout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
                 startActivity(intent);
                 finish();
             }
