@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Upload Retrieve Image</string>
+    <string name="app_name">JACSON Demo App</string>
     <string name="add_a_caption">Add a caption...</string>
 </resources>

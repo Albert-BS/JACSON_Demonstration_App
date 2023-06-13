@@ -1,6 +1,6 @@
 package com.example.uploadretrieveimage;
 
-public class HelperClass {
+public class UserInfo {
     String name, email, username, password;
 
     public String getName() {
@@ -35,13 +35,13 @@ public class HelperClass {
         this.password = password;
     }
 
-    public HelperClass(String name, String email, String username, String password) {
+    public UserInfo(String name, String email, String username, String password) {
         this.name = name;
         this.email = email;
         this.username = username;
         this.password = password;
     }
 
-    public HelperClass() {
+    public UserInfo() {
     }
 }

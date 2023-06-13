@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.GridView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
@@ -22,9 +21,9 @@ public class MainActivity extends AppCompatActivity {
 
     Button logout;
     FloatingActionButton fab;
-    private GridView gridView;
+    private android.widget.GridView gridView;
     private ArrayList<DataClass> dataList;
-    private MyAdapter adapter;
+    private GridActivity adapter;
     final private DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("Images");
 
     @Override
@@ -36,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
         gridView = findViewById(R.id.gridView);
         dataList = new ArrayList<>();
-        adapter = new MyAdapter(this, dataList);
+        adapter = new GridActivity(this, dataList);
         gridView.setAdapter(adapter);
         logout = findViewById(R.id.logout_button);
 

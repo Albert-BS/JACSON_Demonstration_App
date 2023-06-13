@@ -17,8 +17,15 @@
         <ImageView
             android:layout_width="100dp"
             android:layout_height="100dp"
+            android:id="@+id/blurImage"
+            android:scaleType="centerCrop"/>
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:scaleType="centerCrop"
-            android:id="@+id/gridImage"/>
+            android:id="@+id/gridImage"
+            android:visibility="gone"/>
 
     </androidx.cardview.widget.CardView>
 
