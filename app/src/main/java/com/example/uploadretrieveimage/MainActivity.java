@@ -42,8 +42,10 @@ public class MainActivity extends AppCompatActivity {
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String userUsername = getIntent().getStringExtra("userUsername");
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     DataClass dataClass = dataSnapshot.getValue(DataClass.class);
+                    dataClass.setUsername(userUsername);
                     dataList.add(dataClass);
                 }
                 adapter.notifyDataSetChanged();

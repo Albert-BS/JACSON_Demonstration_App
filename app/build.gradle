@@ -4,6 +4,9 @@ plugins {
 }
 
 android {
+    packagingOptions {
+        resources.excludes.add("META-INF/*")
+    }
     namespace 'com.example.uploadretrieveimage'
     compileSdk 33
 
@@ -42,4 +45,16 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.14.2'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.14.2'
     implementation 'com.makeramen:roundedimageview:2.3.0'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'org.json:json:20230227'
+    implementation 'org.everit.json:org.everit.json.schema:1.5.1'
+    implementation('com.networknt:json-schema-validator:1.0.84') {
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+    }
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+    implementation 'ch.qos.logback:logback-classic:1.4.7'
+
+    implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
+
 }

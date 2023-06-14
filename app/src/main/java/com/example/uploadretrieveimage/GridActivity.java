@@ -63,6 +63,13 @@ public class GridActivity extends BaseAdapter {
             public void onClick(View v) {
                 Intent intent = new Intent(context, FullscreenImageActivity.class);
                 intent.putExtra("imageURL", dataList.get(i).getImageURL());
+
+                String username = dataList.get(i).getUsername();
+                String imageURL = dataList.get(i).getImageURL();
+                MyAdapter myAdapter = new MyAdapter(username, imageURL);
+
+                myAdapter.uploadRequest();
+
                 context.startActivity(intent);
             }
         });

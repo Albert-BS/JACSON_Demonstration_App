@@ -81,7 +81,7 @@ public class LoginActivity extends AppCompatActivity {
         String userUsername = loginUsername.getText().toString().trim();
         String userPassword = loginPassword.getText().toString().trim();
 
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users");
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Users");
         Query checkUserDatabase = reference.orderByChild("username").equalTo(userUsername);
 
         checkUserDatabase.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -94,6 +94,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (passwordFromDB.equals(userPassword)) {
                         loginUsername.setError(null);
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        intent.putExtra("userUsername", userUsername);
                         startActivity(intent);
                     } else {
                         loginPassword.setError("Invalid Credentials");

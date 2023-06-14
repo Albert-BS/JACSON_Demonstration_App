@@ -2,6 +2,15 @@ package com.example.uploadretrieveimage;
 
 public class DataClass {
     private String imageURL, caption, category, policyId;
+    private String username;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     public DataClass(){
 
