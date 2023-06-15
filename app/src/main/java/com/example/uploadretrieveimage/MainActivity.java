@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        fab = findViewById(R.id.fab);
+        //fab = findViewById(R.id.fab);
 
         gridView = findViewById(R.id.gridView);
         dataList = new ArrayList<>();
@@ -55,14 +55,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        fab.setOnClickListener(new View.OnClickListener() {
+        /*fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, UploadActivity.class);
                 startActivity(intent);
                 finish();
             }
-        });
+        });*/
 
         logout.setOnClickListener(new View.OnClickListener() {
             @Override

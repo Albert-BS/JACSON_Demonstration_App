@@ -80,7 +80,7 @@ public class GridActivity extends BaseAdapter {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         Bitmap originalBitmap = ((BitmapDrawable) resource).getBitmap();
-                        Bitmap blurredBitmap = blurImage(context, originalBitmap, 25f);
+                        Bitmap blurredBitmap = blurImage(context, originalBitmap, 5f);
                         gridImage.setImageBitmap(blurredBitmap);
                     }
 

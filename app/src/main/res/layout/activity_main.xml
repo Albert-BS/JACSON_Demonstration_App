@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <!--<com.google.android.material.floatingactionbutton.FloatingActionButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/fab"
@@ -17,7 +17,7 @@
         android:layout_marginBottom="80dp"
         android:backgroundTint="@color/lavender"
         android:src="@drawable/baseline_add_24"
-        android:tint="@color/white"/>
+        android:tint="@color/white"/>-->
 
     <GridView
         android:layout_width="match_parent"
