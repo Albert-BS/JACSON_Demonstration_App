@@ -38,6 +38,7 @@ public class LoginActivity extends AppCompatActivity implements LocationListener
     Button loginButton;
     TextView signupRedirectText;
     LocationManager locationManager;
+    private String country;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,11 +153,19 @@ public class LoginActivity extends AppCompatActivity implements LocationListener
         try {
             Geocoder geocoder = new Geocoder(LoginActivity.this, Locale.getDefault());
             List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-            String address = addresses.get(0).getCountryCode();
-            Toast.makeText(this, "Country: " + address, Toast.LENGTH_SHORT).show();
+            country = addresses.get(0).getCountryCode();
+            Toast.makeText(this, "Country: " + country, Toast.LENGTH_SHORT).show();
         }catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public String getUsername() {
+        return loginUsername.toString();
     }
 
     @Override

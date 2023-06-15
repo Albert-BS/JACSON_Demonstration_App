@@ -53,6 +53,8 @@ public class MyAdapter {
                         policyRef.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
                             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                LoginActivity loginActivity = new LoginActivity();
+                                String country = loginActivity.getCountry();
                                 // Retrieve the policy data
                                 Object policyData = snapshot.getValue();
 
