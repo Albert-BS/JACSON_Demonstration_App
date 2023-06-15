@@ -1,5 +1,6 @@
 package com.example.uploadretrieveimage;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -11,8 +12,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class SignupActivity extends AppCompatActivity {
 
@@ -40,17 +44,54 @@ public class SignupActivity extends AppCompatActivity {
                 database = FirebaseDatabase.getInstance();
                 reference = database.getReference("Users");
 
-                String name = signupName.getText().toString();
-                String email = signupEmail.getText().toString();
-                String username = signupUsername.getText().toString();
+                final String name = signupName.getText().toString();
+                final String email = signupEmail.getText().toString();
+                final String username = signupUsername.getText().toString();
                 String password = signupPassword.getText().toString();
 
-                UserInfo helperClass = new UserInfo(name, email, username, password);
-                reference.child(username).setValue(helperClass);
+                // Check if the username already exists
+                reference.child(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.exists()) {
+                            //Toast.makeText(SignupActivity.this, "Username already exists", Toast.LENGTH_SHORT).show();
+                            signupUsername.setError("Username already exists");
+                            signupUsername.requestFocus();
+                        } else {
+                            // Check if the email already exists
+                            reference.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                    if (dataSnapshot.exists()) {
+                                        //Toast.makeText(SignupActivity.this, "Email already exists", Toast.LENGTH_SHORT).show();
+                                        signupEmail.setError("Email already exists");
+                                        signupEmail.requestFocus();
+                                    } else {
+                                        // Both username and email are unique, proceed with signup
+                                        UserInfo helperClass = new UserInfo(name, email, username, password);
+                                        reference.child(username).setValue(helperClass);
 
-                Toast.makeText(SignupActivity.this, "You have signup successfully", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
-                startActivity(intent);
+                                        Toast.makeText(SignupActivity.this, "You have signed up successfully", Toast.LENGTH_SHORT).show();
+                                        Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
+                                        startActivity(intent);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    // Handle the error case
+                                    Toast.makeText(SignupActivity.this, "Error occurred: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        // Handle the error case
+                        Toast.makeText(SignupActivity.this, "Error occurred: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         loginRedirectText.setOnClickListener(new View.OnClickListener() {
