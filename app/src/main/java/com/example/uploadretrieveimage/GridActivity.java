@@ -5,12 +5,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +24,9 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
 import java.util.ArrayList;
-public class GridActivity extends BaseAdapter {
+import java.util.concurrent.CountDownLatch;
+
+public class GridActivity extends BaseAdapter{
     private ArrayList<DataClass> dataList;
     private Context context;
     LayoutInflater layoutInflater;
@@ -68,7 +68,21 @@ public class GridActivity extends BaseAdapter {
                 String imageURL = dataList.get(i).getImageURL();
                 MyAdapter myAdapter = new MyAdapter(username, imageURL);
 
-                myAdapter.uploadRequest();
+                CountDownLatch latch = new CountDownLatch(1);
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String result = myAdapter.fetchAndProcessPolicy();
+                        latch.countDown();
+                    }
+                }).start();
+
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
                 context.startActivity(intent);
             }
