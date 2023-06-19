@@ -2,7 +2,7 @@ package com.example.uploadretrieveimage;
 
 public class DataClass {
     private String imageURL, caption, category, policyId;
-    private String username;
+    private String username, location;
 
     public String getUsername() {
         return username;
@@ -53,5 +53,13 @@ public class DataClass {
         this.caption = caption;
         this.category = category;
         this.policyId = policyId;
+    }
+
+    public void setLocation(String country) {
+        this.location = country;
+    }
+
+    public String getCountry() {
+        return location;
     }
 }

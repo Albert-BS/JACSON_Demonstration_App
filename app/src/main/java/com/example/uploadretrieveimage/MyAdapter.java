@@ -1,6 +1,8 @@
 package com.example.uploadretrieveimage;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.provider.ContactsContract;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -19,6 +21,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,10 +35,11 @@ public class MyAdapter {
     String username, imageURL;
     private String country;
 
-    public MyAdapter(String username, String imageURL) {
+    public MyAdapter(String username, String imageURL, String country) {
         this.database = FirebaseDatabase.getInstance().getReference();
         this.username = username;
         this.imageURL = imageURL;
+        this.country = country;
     }
 
     public void setCountry(String country){
@@ -161,8 +169,32 @@ public class MyAdapter {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                         if (dataSnapshot.exists()) {
-                            if (dataSnapshot.hasChild(attributeId)) {
-                                String attributeValue = dataSnapshot.child(attributeId).getValue(String.class);
+                            if (attributeId.equals("age")) {
+                                String birthdayString = null;
+                                DataSnapshot birthdaySnapshot = dataSnapshot.child("birthday");
+                                if (birthdaySnapshot.exists()) {
+                                    birthdayString = birthdaySnapshot.getValue(String.class);
+                                }
+                                if (birthdayString != null) {
+                                    LocalDate birthday = LocalDate.parse(birthdayString);
+                                    LocalDate currentDate = LocalDate.now();
+                                    int attributeReq = Period.between(birthday, currentDate).getYears();
+
+                                    System.out.println("Age: " + attributeReq);
+                                }
+                            }
+                            else if (attributeId.equals("location")) {
+                                String attributeReq = country;
+                            }
+                            else {
+                                if (dataSnapshot.hasChild(attributeId)) {
+                                    String attributeValue = dataSnapshot.child(attributeId).getValue(String.class);
+                                    try {
+                                        Object attributeReq = convertAttributeValue(attributeValue, dataType);
+                                    } catch (ParseException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
                             }
                         }
                     }
@@ -176,6 +208,45 @@ public class MyAdapter {
                 processApply(nestedApply.path("apply"));
             }
         }
+    }
+
+    private static Object convertAttributeValue(String attribute, String dataType) throws ParseException {
+        switch (dataType.toLowerCase()) {
+            case "boolean":
+                return Boolean.parseBoolean(attribute);
+            case "integer":
+                return Integer.parseInt(attribute);
+            case "double":
+                return Double.parseDouble(attribute);
+            case "float":
+                return Float.parseFloat(attribute);
+            case "time":
+                try {
+                    @SuppressLint("SimpleDateFormat") DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+                    return timeFormat.parse(attribute);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "date":
+                try {
+                    @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    return dateFormat.parse(attribute);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "datetime":
+                try {
+                    @SuppressLint("SimpleDateFormat") DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                    return dateTimeFormat.parse(attribute);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            default:
+                return attribute;
+        }
+        return null;
     }
 }
 

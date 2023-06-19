@@ -43,9 +43,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String userUsername = getIntent().getStringExtra("userUsername");
+                String country = getIntent().getStringExtra("location");
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     DataClass dataClass = dataSnapshot.getValue(DataClass.class);
                     dataClass.setUsername(userUsername);
+                    dataClass.setLocation(country);
                     dataList.add(dataClass);
                 }
                 adapter.notifyDataSetChanged();

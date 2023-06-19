@@ -56,6 +56,9 @@ public class LoginActivity extends AppCompatActivity implements LocationListener
                     Manifest.permission.ACCESS_FINE_LOCATION
             },100);
         }
+        else {
+            getLocation();
+        }
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,7 +66,6 @@ public class LoginActivity extends AppCompatActivity implements LocationListener
                 if (!validateUsername() | !validatePassword()) {
 
                 } else {
-                    getLocation();
                     checkUser();
                 }
             }
@@ -129,6 +131,7 @@ public class LoginActivity extends AppCompatActivity implements LocationListener
                         loginUsername.setError(null);
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                         intent.putExtra("userUsername", userUsername);
+                        intent.putExtra("location", country);
                         startActivity(intent);
                     } else {
                         loginPassword.setError("Invalid Credentials");

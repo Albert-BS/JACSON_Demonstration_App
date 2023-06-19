@@ -66,7 +66,8 @@ public class GridActivity extends BaseAdapter{
 
                 String username = dataList.get(i).getUsername();
                 String imageURL = dataList.get(i).getImageURL();
-                MyAdapter myAdapter = new MyAdapter(username, imageURL);
+                String country = dataList.get(i).getCountry();
+                MyAdapter myAdapter = new MyAdapter(username, imageURL, country);
 
                 CountDownLatch latch = new CountDownLatch(1);
 
