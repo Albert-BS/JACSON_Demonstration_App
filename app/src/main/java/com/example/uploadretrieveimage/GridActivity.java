@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
@@ -14,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,9 +28,14 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class GridActivity extends BaseAdapter{
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private ArrayList<DataClass> dataList;
     private Context context;
     LayoutInflater layoutInflater;
@@ -57,10 +66,13 @@ public class GridActivity extends BaseAdapter{
         ImageView gridImage = view.findViewById(R.id.gridImage);
         TextView gridCaption = view.findViewById(R.id.gridCaption);
         ImageView blurImage = view.findViewById(R.id.blurImage);
+        ProgressBar loadingProgressBar = view.findViewById(R.id.loadingProgressBar);
 
         blurImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                loadingProgressBar.setVisibility(View.VISIBLE);
+
                 Intent intent = new Intent(context, FullscreenImageActivity.class);
                 intent.putExtra("imageURL", dataList.get(i).getImageURL());
 
@@ -69,23 +81,30 @@ public class GridActivity extends BaseAdapter{
                 String country = dataList.get(i).getCountry();
                 MyAdapter myAdapter = new MyAdapter(username, imageURL, country);
 
-                CountDownLatch latch = new CountDownLatch(1);
-
-                new Thread(new Runnable() {
+                Future<String> futureResult = executorService.submit(new Callable<String>() {
+                    @Override
+                    public String call() throws Exception {
+                        return myAdapter.fetchAndProcessPolicy();
+                    }
+                });
+                executorService.execute(new Runnable() {
                     @Override
                     public void run() {
-                        String result = myAdapter.fetchAndProcessPolicy();
-                        latch.countDown();
+                        try {
+                            String result = futureResult.get();
+                            Handler handler = new Handler(Looper.getMainLooper());
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    loadingProgressBar.setVisibility(View.GONE);
+                                    context.startActivity(intent);
+                                }
+                            });
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }).start();
-
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                context.startActivity(intent);
+                });
             }
         });
 
