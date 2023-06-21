@@ -1,17 +1,11 @@
 package com.example.uploadretrieveimage;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.provider.ContactsContract;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DataSnapshot;
@@ -28,9 +22,9 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -63,8 +57,13 @@ public class MyAdapter {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
                     String userKey = dataSnapshot.getChildren().iterator().next().getKey();
-
-                    // Get the image ID using the imageURL
+                    HashMap<String, Object> userData = (HashMap<String, Object>) dataSnapshot.getChildren().iterator().next().getValue();
+                    Map<String, String> map = new HashMap<>();
+                    for (Map.Entry<String, Object> entry : userData.entrySet()) {
+                        String key = entry.getKey();
+                        String value = entry.getValue().toString();
+                        map.put(key, value);
+                    }
                     Query imageQuery = imagesRef[0].orderByChild("imageURL").equalTo(imageURL);
                     imageQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -96,7 +95,7 @@ public class MyAdapter {
                                                         String policyJson = dataSnapshot.getValue(String.class);
                                                         // Parse the JSON into a Java object (you can use a JSON library like Jackson or Gson)
                                                         // Process the conditions in the policy
-                                                        processJSON(policyJson, attributes);
+                                                        processJSON(policyJson, attributes, map);
                                                         attributesFuture.complete(null);
                                                     }
                                                 }
@@ -140,55 +139,58 @@ public class MyAdapter {
         String caption = captionFuture.join();
         String policyId = policyIdFuture.join();
 
-        Map<String, Object> request = new HashMap<>();
+        Map<String, Object> request = new LinkedHashMap<>();
         request.put("returnPolicyIdList", false);
         request.put("schemaLocation", "http://json-schema.org/draft-06/schema");
         request.put("desc", "Request to access image " + (caption != null ? caption : ""));
-        request.put("requestId", (policyId != null ? policyId : ""));
+        String policyIdValue = (policyId != null ? policyId : "");
+        String modifiedPolicyIdValue = policyIdValue.replace("policy", "request");
+        request.put("requestId", modifiedPolicyIdValue);
         request.put("attributes", attributes);
+
+        Map<String, Object> wrappedRequest = new LinkedHashMap<>();
+        wrappedRequest.put("Request", request);
 
         ObjectMapper objectMapper = new ObjectMapper();
         String requestJson;
         try {
-            requestJson = objectMapper.writeValueAsString(request);
+            requestJson = objectMapper.writeValueAsString(wrappedRequest);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
         return requestJson;
     }
 
-    private void processJSON(String policyString, List<Map<String, Object>> attributes) {
+    private void processJSON(String policyString, List<Map<String, Object>> attributes, Map<String, String> map) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
-            // Parse the policy JSON string into a Map
             JsonNode policyNode = objectMapper.readTree(policyString);
-            processConditions(policyNode, attributes);
-        } catch (JsonProcessingException e) {
+            processConditions(policyNode, attributes, map);
+        } catch (JsonProcessingException | ParseException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void processConditions(JsonNode policyNode, List<Map<String, Object>> attributes) {
+    private void processConditions(JsonNode policyNode, List<Map<String, Object>> attributes, Map<String, String> map) throws ParseException {
         JsonNode rulesNode = policyNode.path("Policy").path("rule");
         for (JsonNode ruleNode : rulesNode) {
             JsonNode conditionNode = ruleNode.path("condition");
             if (conditionNode.isArray()) {
                 for (JsonNode condition : conditionNode) {
-                    processCondition(condition, attributes);
+                    processCondition(condition, attributes, map);
                 }
             }
         }
     }
 
-    private void processCondition(JsonNode conditionNode, List<Map<String, Object>> attributes) {
-        processApply(conditionNode.path("apply"), attributes);
+    private void processCondition(JsonNode conditionNode, List<Map<String, Object>> attributes, Map<String, String> map) throws ParseException {
+        processApply(conditionNode.path("apply"), attributes, map);
     }
 
-    private CompletableFuture<Void> processApply(JsonNode applyNode, List<Map<String, Object>> attributes) {
+    private void processApply(JsonNode applyNode, List<Map<String, Object>> attributes, Map<String, String> map) throws ParseException {
         if (applyNode.isArray()) {
-            List<CompletableFuture<Void>> userRefFutures = new ArrayList<>();
             for (JsonNode nestedApply : applyNode) {
                 JsonNode attributeValueNode = nestedApply.path("attributeValue");
                 JsonNode attributeDesignatorNode = nestedApply.path("attributeDesignator");
@@ -197,74 +199,44 @@ public class MyAdapter {
                 String category = attributeDesignatorNode.path("category").asText();
                 String attributeId = attributeDesignatorNode.path("attributeId").asText();
 
-                Map<String, Object> attribute = new HashMap<>();
+                Map<String, Object> attribute = new LinkedHashMap<>();
                 attribute.put("attributeId", attributeId);
 
-                CompletableFuture<Void> userRefFuture = new CompletableFuture<>();
-
-                Map<String, Object> attributeValue = new HashMap<>();
+                Map<String, Object> attributeValue = new LinkedHashMap<>();
                 attributeValue.put("dataType", dataType);
 
-                DatabaseReference userRef = database.child("Users").child(username);
-                userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.exists()) {
-                            if (attributeId.equals("age")) {
-                                String birthdayString = null;
-                                DataSnapshot birthdaySnapshot = dataSnapshot.child("birthday");
-                                if (birthdaySnapshot.exists()) {
-                                    birthdayString = birthdaySnapshot.getValue(String.class);
-                                }
-                                if (birthdayString != null) {
-                                    LocalDate birthday = LocalDate.parse(birthdayString);
-                                    LocalDate currentDate = LocalDate.now();
-                                    int attributeReq = Period.between(birthday, currentDate).getYears();
-                                    attributeValue.put("value", attributeReq);
-                                }
-                            }
-                            else if (attributeId.equals("location")) {
-                                String attributeReq = country;
-                                attributeValue.put("value", attributeReq);
-                            }
-                            else {
-                                if (dataSnapshot.hasChild(attributeId)) {
-                                    String attributeVal = dataSnapshot.child(attributeId).getValue(String.class);
-                                    try {
-                                        Object attributeReq = convertAttributeValue(attributeVal, dataType);
-                                        attributeValue.put("value", attributeReq);
-                                    } catch (ParseException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                            }
-                        }
-                        userRefFuture.complete(null);
+                if (attributeId.equals("location")) {
+                    attributeValue.put("value", country);
+                }
+                else if (attributeId.equals("age")) {
+                    if (map.containsKey("birthday")) {
+                        String birthdayString = map.get("birthday");
+                        LocalDate birthday = LocalDate.parse(birthdayString);
+                        LocalDate currentDate = LocalDate.now();
+                        int age = Period.between(birthday, currentDate).getYears();
+                        attributeValue.put("value", age);
                     }
+                }
+                else if (map.containsKey(attributeId)) {
+                        String attributeVal = map.get(attributeId);
+                        Object attributeMap = convertAttributeValue(attributeVal, dataType);
+                        attributeValue.put("value", attributeMap);
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        userRefFuture.completeExceptionally(error.toException());
-                    }
-                });
-
-                userRefFutures.add(userRefFuture);
+                attribute.put("attributeValue", attributeValue);
 
                 List<Map<String, Object>> attributeList = new ArrayList<>();
-                attributeList.add(attributeValue);
+                attributeList.add(attribute);
 
-                Map<String, Object> categoryMap = new HashMap<>();
+                Map<String, Object> categoryMap = new LinkedHashMap<>();
                 categoryMap.put("category", category);
                 categoryMap.put("attribute", attributeList);
 
                 attributes.add(categoryMap);
 
-                CompletableFuture<Void> nestedApplyFuture = processApply(nestedApply.path("apply"), attributes);
-                userRefFutures.add(nestedApplyFuture);
+                processApply(nestedApply.path("apply"), attributes, map);
             }
-            return CompletableFuture.allOf(userRefFutures.toArray(new CompletableFuture[0]));
         }
-        return CompletableFuture.completedFuture(null);
     }
 
     private static Object convertAttributeValue(String attribute, String dataType) throws ParseException {
