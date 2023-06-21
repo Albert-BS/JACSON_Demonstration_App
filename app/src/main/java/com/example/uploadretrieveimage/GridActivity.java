@@ -19,6 +19,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,6 +27,10 @@ import androidx.annotation.Nullable;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
@@ -92,15 +97,40 @@ public class GridActivity extends BaseAdapter{
                     public void run() {
                         try {
                             String result = futureResult.get();
-                            Handler handler = new Handler(Looper.getMainLooper());
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    loadingProgressBar.setVisibility(View.GONE);
-                                    context.startActivity(intent);
+                            JSONObject responseJson = new JSONObject(result);
+                            JSONArray resultsArray = responseJson.getJSONArray("results");
+                            if (resultsArray.length() > 0) {
+                                JSONObject resultObject = resultsArray.getJSONObject(0);
+                                String resultValue = resultObject.getString("result");
+                                if (resultValue.equals("Permit")) {
+                                    Handler handler = new Handler(Looper.getMainLooper());
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            loadingProgressBar.setVisibility(View.GONE);
+                                            context.startActivity(intent);
+                                        }
+                                    });
                                 }
-                            });
-                        } catch (InterruptedException | ExecutionException e) {
+                                else if (resultValue.equals("Deny")) {
+                                    Handler handler = new Handler(Looper.getMainLooper());
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            loadingProgressBar.setVisibility(View.GONE);
+                                            //Toast.makeText(context, "Access Denied", Toast.LENGTH_SHORT).show();
+                                            Toast toast = new Toast(context);
+                                            View toastView = LayoutInflater.from(context).inflate(R.layout.toast_alert, null);
+                                            TextView textView = toastView.findViewById(R.id.toast_text);
+                                            textView.setText("Access Denied");
+                                            toast.setView(toastView);
+                                            toast.setDuration(Toast.LENGTH_LONG);
+                                            toast.show();
+                                        }
+                                    });
+                                }
+                            }
+                        } catch (InterruptedException | ExecutionException | JSONException e) {
                             e.printStackTrace();
                         }
                     }

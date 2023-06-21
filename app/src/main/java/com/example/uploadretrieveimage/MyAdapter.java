@@ -15,6 +15,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -40,7 +41,7 @@ public class MyAdapter {
         this.country = country;
     }
 
-    public String fetchAndProcessPolicy() {
+    public String fetchAndProcessPolicy() throws IOException {
         List<Map<String, Object>> attributes = new ArrayList<>();
         final DatabaseReference[] usersRef = {database.child("Users")};
         final DatabaseReference[] imagesRef = {database.child("Images")};
@@ -49,6 +50,8 @@ public class MyAdapter {
         CompletableFuture<String> captionFuture = new CompletableFuture<>();
         CompletableFuture<String> policyIdFuture = new CompletableFuture<>();
         CompletableFuture<Void> attributesFuture = new CompletableFuture<>();
+
+        final String[] policyJson = new String[1];
 
         // Get the user key using the username
         Query userQuery = usersRef[0].orderByChild("username").equalTo(username);
@@ -92,10 +95,10 @@ public class MyAdapter {
                                                 public void onDataChange(DataSnapshot dataSnapshot) {
                                                     if (dataSnapshot.exists()) {
                                                         // Process the policy JSON
-                                                        String policyJson = dataSnapshot.getValue(String.class);
+                                                        policyJson[0] = dataSnapshot.getValue(String.class);
                                                         // Parse the JSON into a Java object (you can use a JSON library like Jackson or Gson)
                                                         // Process the conditions in the policy
-                                                        processJSON(policyJson, attributes, map);
+                                                        processJSON(policyJson[0], attributes, map);
                                                         attributesFuture.complete(null);
                                                     }
                                                 }
@@ -158,7 +161,8 @@ public class MyAdapter {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return requestJson;
+        String response = Validator.checkPolicy(requestJson, policyJson[0]);
+        return response;
     }
 
     private void processJSON(String policyString, List<Map<String, Object>> attributes, Map<String, String> map) {
