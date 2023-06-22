@@ -236,6 +236,7 @@ public class MyAdapter {
 
     private void processApply(JsonNode applyNode, List<Map<String, Object>> attributes, Map<String, String> map) throws ParseException {
         if (applyNode.isArray()) {
+            boolean attributeIdExists = false;
             for (JsonNode nestedApply : applyNode) {
                 JsonNode attributeValueNode = nestedApply.path("attributeValue");
                 JsonNode attributeDesignatorNode = nestedApply.path("attributeDesignator");
@@ -243,6 +244,20 @@ public class MyAdapter {
                 String dataType = attributeValueNode.path("dataType").asText();
                 String category = attributeDesignatorNode.path("category").asText();
                 String attributeId = attributeDesignatorNode.path("attributeId").asText();
+
+                for (Map<String, Object> existingAttribute : attributes) {
+                    String existingAttributeId = (String) existingAttribute.get("attributeId");
+                    if (attributeId.equals(existingAttributeId)) {
+                        attributeIdExists = true;
+                        break;
+                    }
+                }
+
+                if (attributeIdExists) {
+                    attributeIdExists = false;
+                    processApply(nestedApply.path("apply"), attributes, map);
+                    continue;
+                }
 
                 Map<String, Object> attribute = new LinkedHashMap<>();
                 attribute.put("attributeId", attributeId);
