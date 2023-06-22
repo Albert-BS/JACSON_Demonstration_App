@@ -15,6 +15,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -22,10 +26,13 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -41,7 +48,7 @@ public class MyAdapter {
         this.country = country;
     }
 
-    public String fetchAndProcessPolicy() throws IOException {
+    public String fetchAndProcessPolicy() throws IOException, JSONException {
         List<Map<String, Object>> attributes = new ArrayList<>();
         final DatabaseReference[] usersRef = {database.child("Users")};
         final DatabaseReference[] imagesRef = {database.child("Images")};
@@ -142,13 +149,25 @@ public class MyAdapter {
         String caption = captionFuture.join();
         String policyId = policyIdFuture.join();
 
+        DatabaseReference requestsRef = database.child("Requests");
+        final long[] requestsCount = {0};
+        requestsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                requestsCount[0] = snapshot.getChildrenCount();
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
+
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("returnPolicyIdList", false);
         request.put("schemaLocation", "http://json-schema.org/draft-06/schema");
         request.put("desc", "Request to access image " + (caption != null ? caption : ""));
         String policyIdValue = (policyId != null ? policyId : "");
-        String modifiedPolicyIdValue = policyIdValue.replace("policy", "request");
-        request.put("requestId", modifiedPolicyIdValue);
+        //String modifiedPolicyIdValue = policyIdValue.replace("policy", "request");
+        request.put("requestId", "request" + requestsCount[0]);
         request.put("attributes", attributes);
 
         Map<String, Object> wrappedRequest = new LinkedHashMap<>();
@@ -161,7 +180,29 @@ public class MyAdapter {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        String requestId = "Request" + (requestsCount[0] + 1);
+        requestsRef.child(requestId).setValue(requestJson);
+
         String response = Validator.checkPolicy(requestJson, policyJson[0]);
+        JSONObject responseJson = new JSONObject(response);
+        JSONArray resultsArray = responseJson.getJSONArray("results");
+        if (resultsArray.length() > 0) {
+            JSONObject resultObject = resultsArray.getJSONObject(0);
+            String resultValue = resultObject.getString("result");
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.getDefault());
+            dateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Madrid"));
+            String currentDateAndTime = dateFormat.format(new Date());
+
+            String logMessage = "Access to " + caption + " image by user " + username + ": " +
+                    resultValue + ", Policy: " + policyIdValue + ", Request: " + requestId;
+            String logEntryId = currentDateAndTime + "_" + System.currentTimeMillis();
+
+            DatabaseReference loggersRef = database.child("Loggers");
+
+            loggersRef.child(logEntryId).setValue(logMessage);
+        }
         return response;
     }
 
