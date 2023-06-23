@@ -1,5 +1,7 @@
 package com.example.uploadretrieveimage;
 
+import android.annotation.SuppressLint;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,10 +24,9 @@ public class Validator {
 
     public static String checkPolicy(String requestJson, String policyJson) throws IOException {
         boolean isMatch;
-        boolean conditionAnd;
         Map<String, String> requestMap = parseXacmlRequest(requestJson);
         ObjectMapper objectMapper = new ObjectMapper();
-        String topRuleEffect = null, bottomRuleEffect = null;
+        String topRuleEffect, bottomRuleEffect;
         JsonNode policyNode = objectMapper.readTree(policyJson);
         try {
 
@@ -35,10 +36,11 @@ public class Validator {
             JsonNode targetNode = policyNode.path("Policy").path("rule").get(0).path("target").get(0)
                     .path("AnyOf").get(0).path("AllOf");
             JsonNode conditionNode = policyNode.path("Policy").path("rule").get(0).path("condition");
-            JsonNode conditionFunction = policyNode.path("Policy").path("rule").get(0).path("condition");
-            String functionAndOr = conditionFunction.at("/0/functionId").asText();
-            conditionAnd = (functionAndOr.endsWith(":and")); // conditionAnd = true if ends with ":and", else false
-            isMatch = evaluateCondition(conditionNode, requestMap, "empty");
+
+            isMatch = evaluateTarget(targetNode, requestMap);
+            if (isMatch) {
+                isMatch = evaluateCondition(conditionNode, requestMap, "empty");
+            }
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -56,15 +58,48 @@ public class Validator {
         return objectMapper.writeValueAsString(response);
     }
 
+    private static boolean evaluateTarget(JsonNode targetNode, Map<String, String> requestMap) throws ParseException {
+        boolean isMatch;
+        for (JsonNode element : targetNode){
+            String matchIdText = element.path("match").path("matchId").asText();
+            String matchId = matchIdText.substring(matchIdText.lastIndexOf(":") + 1);
+            String value = element.path("match").path("attributeValue").path("value").asText();
+            String dataType = element.path("match").path("attributeValue").path("dataType").asText();
+            String category = element.path("match").path("attributeDesignator").path("category").asText();
+            String attributeId = element.path("match").path("attributeDesignator").path("attributeId").asText();
+            boolean mustBePresent = element.path("match").path("attributeDesignator").path("mustBePresent").asBoolean();
+            String key = category + "_" + attributeId;
+            if (!requestMap.containsKey(key)){
+                if (mustBePresent) {
+                    return false;
+                }
+                else {
+                    continue;
+                }
+            }
+            String req = requestMap.get(key);
+            String[] reqValues= req != null ? req.split(",") : new String[0];
+            String reqValue = reqValues[0];
+            String reqDataType = reqValues[1];
+            if (!Objects.equals(dataType, reqDataType)){
+                return false;
+            }
+            Object polParsedAttribute = convertAttributeValue(value, dataType);
+            Object reqParsedAttribute = convertAttributeValue(reqValue, reqDataType);
+            isMatch = compareAttributes(reqParsedAttribute, polParsedAttribute, matchId);
+            if (!isMatch) { // If either the action or the resource does not correspond return
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static boolean evaluateCondition(JsonNode conditionNode, Map<String, String> requestMap, String prevFunctionId) throws ParseException {
         List<Boolean> evaluations = new ArrayList<>();
-
         for (JsonNode element : conditionNode) {
             String functionIdText = element.at("/functionId").asText();
             String functionId = functionIdText.substring(functionIdText.lastIndexOf(":") + 1);
-
             boolean isMatch;
-
             if (functionId.equals("and") || functionId.equals("or")) {
                 JsonNode applyNode = element.at("/apply");
                 boolean applyResult = evaluateCondition(applyNode, requestMap, functionId);
@@ -75,50 +110,40 @@ public class Validator {
                 String category = element.at("/attributeDesignator/category").asText();
                 String attributeId = element.at("/attributeDesignator/attributeId").asText();
                 boolean mustBePresent = element.at("/attributeDesignator/mustBePresent").asBoolean();
-
                 String key = category + "_" + attributeId;
-
                 if (!requestMap.containsKey(key)) {
                     if (mustBePresent) {
-                        isMatch = false;
-                        evaluations.add(isMatch);
+                        evaluations.add(false);
                         break;
                     } else {
                         continue;
                     }
                 }
-
                 String req = requestMap.get(key);
-                String[] reqValues = req.split(",");
+                String[] reqValues= req != null ? req.split(",") : new String[0];
                 String reqValue = reqValues[0];
                 String reqDataType = reqValues[1];
-
                 if (!Objects.equals(dataType, reqDataType)) {
-                    isMatch = false;
-                    evaluations.add(isMatch);
+                    evaluations.add(false);
                     break;
                 }
-
                 Object polParsedAttribute = convertAttributeValue(value, dataType);
                 Object reqParsedAttribute = convertAttributeValue(reqValue, reqDataType);
-
                 isMatch = compareAttributes(reqParsedAttribute, polParsedAttribute, functionId);
                 evaluations.add(isMatch);
             }
         }
-
         boolean isMatch;
         if (prevFunctionId.equals("and")) {
             isMatch = !evaluations.contains(false);
         } else { // "or"
             isMatch = evaluations.contains(true);
         }
-
         return isMatch;
     }
 
 
-    private static Object convertAttributeValue(String attribute, String dataType) throws ParseException {
+    private static Object convertAttributeValue(String attribute, String dataType) {
         switch (dataType.toLowerCase()) {
             case "boolean":
                 return Boolean.parseBoolean(attribute);
@@ -130,7 +155,7 @@ public class Validator {
                 return Float.parseFloat(attribute);
             case "time":
                 try {
-                    DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+                    @SuppressLint("SimpleDateFormat") DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
                     return timeFormat.parse(attribute);
                 } catch (ParseException e) {
                     e.printStackTrace();
@@ -138,7 +163,7 @@ public class Validator {
                 break;
             case "date":
                 try {
-                    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
                     return dateFormat.parse(attribute);
                 } catch (ParseException e) {
                     e.printStackTrace();
@@ -146,7 +171,7 @@ public class Validator {
                 break;
             case "datetime":
                 try {
-                    DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                    @SuppressLint("SimpleDateFormat") DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                     return dateTimeFormat.parse(attribute);
                 } catch (ParseException e) {
                     e.printStackTrace();
@@ -209,38 +234,24 @@ public class Validator {
         return extractedCondition.toString();
     }
 
-    public static Map<String, String> parseXacmlRequest(String requestJson) throws IOException {
-        // Create an ObjectMapper instance
+    public static Map<String, String> parseXacmlRequest(String requestJson) {
         ObjectMapper objectMapper = new ObjectMapper();
 
         Map<String, String> attributeMap = new HashMap<>();
         try {
-            // Read the JSON file and parse it into a JsonNode
             JsonNode rootNode = objectMapper.readTree(requestJson);
-
-            // Create a map to store the attribute value
-
-            // Get the "attributes" array from the JSON request
             JsonNode attributesNode = rootNode.path("Request").path("attributes");
 
-            // Iterate over the attributes array
             Iterator<JsonNode> attributesIterator = attributesNode.elements();
             while (attributesIterator.hasNext()) {
                 JsonNode attributeNode = attributesIterator.next();
-
-                // Get the "category" and "attributeId" values
                 String category = attributeNode.path("category").asText();
                 String attributeId = attributeNode.path("attribute").get(0).path("attributeId").asText();
-
-                // Get the "value" and "dataType" values
                 String value = attributeNode.path("attribute").get(0).path("attributeValue").path("value").asText();
                 String dataType = attributeNode.path("attribute").get(0).path("attributeValue").path("dataType").asText();
 
-                // Construct the map key and value
                 String mapKey = category + "_" + attributeId;
                 String mapValue = value + "," + dataType;
-
-                // Add the key-value pair to the attribute map
                 attributeMap.put(mapKey, mapValue);
             }
         } catch (IOException e) {
