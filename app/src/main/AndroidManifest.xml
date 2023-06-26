@@ -32,10 +32,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".UploadActivity"
-            android:exported="false"
-            android:theme="@style/Theme.UploadActivity" />
-        <activity
             android:name=".MainActivity"
             android:exported="false" />
     </application>

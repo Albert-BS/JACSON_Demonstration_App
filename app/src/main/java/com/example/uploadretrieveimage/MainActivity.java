@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     Button logout;
-    FloatingActionButton fab;
     private android.widget.GridView gridView;
     private ArrayList<DataClass> dataList;
     private GridActivity adapter;
@@ -30,8 +28,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        //fab = findViewById(R.id.fab);
 
         gridView = findViewById(R.id.gridView);
         dataList = new ArrayList<>();
@@ -56,15 +52,6 @@ public class MainActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {
             }
         });
-
-        /*fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, UploadActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });*/
 
         logout.setOnClickListener(new View.OnClickListener() {
             @Override
