@@ -1,4 +1,4 @@
-package com.example.uploadretrieveimage;
+package com.example.JACSONDemoApp;
 
 import androidx.appcompat.app.AppCompatActivity;
 

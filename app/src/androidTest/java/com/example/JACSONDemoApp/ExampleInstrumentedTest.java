@@ -1,4 +1,4 @@
-package com.example.uploadretrieveimage;
+package com.example.JACSONDemoApp;
 
 import android.content.Context;
 

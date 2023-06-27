@@ -1,4 +1,4 @@
-package com.example.uploadretrieveimage;
+package com.example.JACSONDemoApp;
 
 public class UserInfo {
     String name, email, username, password;

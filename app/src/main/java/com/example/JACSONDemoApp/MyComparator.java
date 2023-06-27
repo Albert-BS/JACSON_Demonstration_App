@@ -1,4 +1,4 @@
-package com.example.uploadretrieveimage;
+package com.example.JACSONDemoApp;
 
 import java.time.LocalTime;
 import java.util.Comparator;

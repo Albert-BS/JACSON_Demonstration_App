@@ -1,4 +1,4 @@
-package com.example.uploadretrieveimage;
+package com.example.JACSONDemoApp;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,7 +30,6 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 public class LoginActivity extends AppCompatActivity implements LocationListener {
 
