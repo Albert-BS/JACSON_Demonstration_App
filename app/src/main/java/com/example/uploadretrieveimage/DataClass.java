@@ -1,4 +1,4 @@
-package com.example.JACSONDemoApp;
+package com.example.uploadretrieveimage;
 
 public class DataClass {
     private String imageURL, caption, category, policyId;

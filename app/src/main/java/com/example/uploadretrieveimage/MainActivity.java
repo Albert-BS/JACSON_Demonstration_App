@@ -1,4 +1,4 @@
-package com.example.JACSONDemoApp;
+package com.example.uploadretrieveimage;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
